@@ -2,6 +2,10 @@
 
 AI-powered YouTube video summarizer running entirely in your browser using WebLLM.
 
+## 🔗 Live Demo
+
+**https://youtube-summarizer-seven-theta.vercel.app**
+
 ## Features
 
 - 🤖 Runs local AI (Llama 3.1) in your browser
