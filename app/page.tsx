@@ -39,7 +39,7 @@ export default function Home() {
   };
 
   const generateSummary = async () => {
-    if (!url) return;
+    if (!model) return;
     
     setLoading(true);
     setError('');
