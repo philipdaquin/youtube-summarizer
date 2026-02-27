@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -11,6 +11,24 @@ export default function Home() {
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
+  const [hasWebGPU, setHasWebGPU] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check for WebGPU support
+    const checkWebGPU = async () => {
+      if (!navigator.gpu) {
+        setHasWebGPU(false);
+        return;
+      }
+      try {
+        const adapter = await navigator.gpu.requestAdapter();
+        setHasWebGPU(!!adapter);
+      } catch {
+        setHasWebGPU(false);
+      }
+    };
+    checkWebGPU();
+  }, []);
 
   const initModel = async () => {
     try {
@@ -35,7 +53,7 @@ export default function Home() {
       setStatus('Ready!');
     } catch (e: any) {
       console.error('Init error:', e);
-      setError('Failed to load AI model. Please refresh and try again. Make sure you have WebGPU support.');
+      setError('Failed to load AI model. Please refresh and try again.');
       setStatus('');
     }
   };
@@ -56,7 +74,7 @@ export default function Home() {
       setStatus('Fetching video information...');
       
       const oembedRes = await fetch(
-        `https://www.youtube.com/oembed?url=${url}&format=json`
+        `https://www.youtube.com/oEmbed?url=${url}&format=json`
       );
       const oembedData = await oembedRes.json();
       const videoTitle = oembedData.title;
@@ -125,7 +143,36 @@ Format your response as:
           </p>
         </div>
 
-        {!initialized && !error && (
+        {/* WebGPU Check */}
+        {hasWebGPU === false && (
+          <div className="bg-amber-950/30 border border-amber-900/50 rounded-2xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-amber-400 font-semibold mb-1">WebGPU Required</h3>
+                <p className="text-amber-200/70 text-sm mb-3">
+                  This app requires WebGPU to run the AI model in your browser. Your browser or device doesn't seem to support WebGPU.
+                </p>
+                <div className="text-sm text-zinc-400">
+                  <p className="mb-2"><strong>To use this app:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 text-zinc-500">
+                    <li>Use Chrome 113+ or Edge 113+ on desktop</li>
+                    <li>Make sure you're not in incognito mode (for some features)</li>
+                    <li>On Mac: Use Chrome with Apple Silicon</li>
+                    <li>Or try a different device with WebGPU support</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading Card */}
+        {!initialized && !error && hasWebGPU !== false && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 mb-8">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800 flex items-center justify-center">
@@ -135,7 +182,8 @@ Format your response as:
               </div>
               <h2 className="text-xl font-semibold mb-2">Load AI Model</h2>
               <p className="text-zinc-400 mb-6 text-sm">
-                This runs a local AI model in your browser using WebGPU. First load takes ~2-3 minutes.
+                This runs a local AI model (Llama 3.1) in your browser using WebGPU. 
+                First load takes ~2-3 minutes. Model is cached for subsequent visits.
               </p>
               
               {status && (
@@ -161,6 +209,7 @@ Format your response as:
           </div>
         )}
 
+        {/* Error State */}
         {error && (
           <div className="bg-red-950/50 border border-red-900 rounded-2xl p-6 mb-8">
             <p className="text-red-400">{error}</p>
@@ -173,6 +222,7 @@ Format your response as:
           </div>
         )}
 
+        {/* Main Interface */}
         {initialized && (
           <>
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
