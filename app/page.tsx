@@ -16,12 +16,13 @@ export default function Home() {
   useEffect(() => {
     // Check for WebGPU support
     const checkWebGPU = async () => {
-      if (!navigator.gpu) {
+      const gpu = (navigator as any).gpu;
+      if (!gpu) {
         setHasWebGPU(false);
         return;
       }
       try {
-        const adapter = await navigator.gpu.requestAdapter();
+        const adapter = await gpu.requestAdapter();
         setHasWebGPU(!!adapter);
       } catch {
         setHasWebGPU(false);
