@@ -1,27 +1,29 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import * as webllm from '@mlc-ai/web-llm';
+import { useState } from 'react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [summary, setSummary] = useState('');
-  const [model, setModel] = useState<webllm.MLCEngine | null>(null);
+  const [model, setModel] = useState<any>(null);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
 
   const initModel = async () => {
     try {
+      setStatus('Loading AI engine...');
+      const webllm = await import('@mlc-ai/web-llm');
+      
       setStatus('Initializing AI model...');
       const selectedModel = 'Llama-3.1-8B-Instruct-q4f32_1-MLC';
       
       const newModel = await webllm.CreateMLCEngine(
         selectedModel,
         {
-          initProgressCallback: (p) => {
+          initProgressCallback: (p: any) => {
             setProgress(Math.round(p.progress * 100));
             setStatus(`Loading: ${p.text}`);
           }
@@ -31,22 +33,21 @@ export default function Home() {
       setModel(newModel);
       setInitialized(true);
       setStatus('Ready!');
-    } catch (e) {
+    } catch (e: any) {
       console.error('Init error:', e);
-      setError('Failed to load AI model. Please refresh and try again.');
+      setError('Failed to load AI model. Please refresh and try again. Make sure you have WebGPU support.');
       setStatus('');
     }
   };
 
   const generateSummary = async () => {
-    if (!model) return;
+    if (!model || !url) return;
     
     setLoading(true);
     setError('');
     setSummary('');
     
     try {
-      // Extract video ID and get info
       const videoId = extractVideoId(url);
       if (!videoId) {
         throw new Error('Invalid YouTube URL');
@@ -54,7 +55,6 @@ export default function Home() {
       
       setStatus('Fetching video information...');
       
-      // Get video title via oEmbed
       const oembedRes = await fetch(
         `https://www.youtube.com/oembed?url=${url}&format=json`
       );
@@ -74,12 +74,12 @@ Format your response as:
 
 **Key Topics:** [3-5 bullet points of likely topics]`;
 
-      const messages: webllm.ChatCompletionMessageParam[] = [
+      const messages = [
         { role: 'system', content: 'You are a helpful AI assistant that summarizes YouTube videos.' },
         { role: 'user', content: prompt }
       ];
 
-      const chunks = [];
+      const chunks: string[] = [];
       const completion = await model.chat.completions.create({
         messages,
         temperature: 0.7,
@@ -94,9 +94,8 @@ Format your response as:
       }
       
       setStatus('');
-    } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : 'An error occurred';
-      setError(errorMessage);
+    } catch (e: any) {
+      setError(e.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -117,7 +116,6 @@ Format your response as:
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-50">
       <div className="max-w-3xl mx-auto px-6 py-20">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-3">
             YouTube Summarizer
@@ -127,7 +125,6 @@ Format your response as:
           </p>
         </div>
 
-        {/* Model Init Card */}
         {!initialized && !error && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 mb-8">
             <div className="text-center">
@@ -138,7 +135,7 @@ Format your response as:
               </div>
               <h2 className="text-xl font-semibold mb-2">Load AI Model</h2>
               <p className="text-zinc-400 mb-6 text-sm">
-                This runs a local AI model in your browser. First load takes ~2-3 minutes.
+                This runs a local AI model in your browser using WebGPU. First load takes ~2-3 minutes.
               </p>
               
               {status && (
@@ -164,7 +161,6 @@ Format your response as:
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="bg-red-950/50 border border-red-900 rounded-2xl p-6 mb-8">
             <p className="text-red-400">{error}</p>
@@ -177,10 +173,8 @@ Format your response as:
           </div>
         )}
 
-        {/* Main Interface */}
         {initialized && (
           <>
-            {/* Input */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
               <div className="flex gap-3">
                 <input
@@ -204,7 +198,6 @@ Format your response as:
               )}
             </div>
 
-            {/* Results */}
             {summary && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center gap-2 mb-4">
@@ -225,7 +218,6 @@ Format your response as:
               </div>
             )}
 
-            {/* Info */}
             <div className="mt-8 text-center text-zinc-500 text-sm">
               <p>🔒 All processing happens in your browser. Your data never leaves your device.</p>
             </div>
