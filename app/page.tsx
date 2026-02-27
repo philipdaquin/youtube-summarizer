@@ -8,7 +8,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [summary, setSummary] = useState('');
-  const [model, setModel] = useState(null);
+  const [model, setModel] = useState<webllm.MLCEngine | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
